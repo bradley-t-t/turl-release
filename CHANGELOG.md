@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.9] - 2026-02-02
+
+- Updated API key configuration in README.md to require each project to provide its own API key in a `.env` file
+- Added instructions in README.md for obtaining API key from https://console.x.ai and adding `.env` to `.gitignore`
+- Specified in README.md that the tool uses the `grok-3-latest` model for changelog and commit message generation
+- Enhanced README.md with detailed error handling information for release failures due to missing API key or failed Grok API calls
+- Added self-release instructions in README.md for running the release from the turl-release directory
+- Updated release process in README.md to include staging all changes with `git add -A` and failing on Grok API call errors
+- Modified `src/index.js` to prioritize loading `.env` from the project root over the package directory
+- Updated error message in `src/index.js` to guide users to add `GROK_API_KEY` to their project's `.env` file and provided the API key source URL
+- Removed `.env` from the `files` array in `package.json` to exclude it from the published package
+- Updated version in `public/version.json` from 1.7 to 1.8 as part of the release process preparation
+
 ## [1.7] - 2026-02-02
 
 - Updated version in public/version.json from 1.3 to 1.6

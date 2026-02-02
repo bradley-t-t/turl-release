@@ -35,19 +35,19 @@ function loadEnvFromPath(envPath) {
 function loadEnv() {
   const isSelfProject = PACKAGE_ROOT === PROJECT_ROOT;
 
-  const packageEnvPath = path.join(PACKAGE_ROOT, ".env");
-  const packageEnvLoaded = loadEnvFromPath(packageEnvPath);
+  const projectEnvPath = path.join(PROJECT_ROOT, ".env");
+  const projectEnvLoaded = loadEnvFromPath(projectEnvPath);
 
-  if (packageEnvLoaded && process.env.GROK_API_KEY) {
-    return isSelfProject ? "local" : "package";
+  if (projectEnvLoaded && process.env.GROK_API_KEY) {
+    return isSelfProject ? "local" : "project";
   }
 
   if (!isSelfProject) {
-    const projectEnvPath = path.join(PROJECT_ROOT, ".env");
-    const projectEnvLoaded = loadEnvFromPath(projectEnvPath);
+    const packageEnvPath = path.join(PACKAGE_ROOT, ".env");
+    const packageEnvLoaded = loadEnvFromPath(packageEnvPath);
 
-    if (projectEnvLoaded) {
-      return "project";
+    if (packageEnvLoaded && process.env.GROK_API_KEY) {
+      return "package";
     }
   }
 
@@ -379,7 +379,8 @@ async function main() {
   const apiKey = getApiKey();
   if (!apiKey) {
     process.stdout.write("  ERROR: No GROK_API_KEY found\n");
-    process.stdout.write("  Please add GROK_API_KEY to the turl-release .env file\n");
+    process.stdout.write("  Add GROK_API_KEY=your-key to your project's .env file\n");
+    process.stdout.write("  Get your API key from https://console.x.ai\n");
     process.exit(1);
   }
   const sourceMessages = {
