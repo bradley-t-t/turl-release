@@ -182,7 +182,7 @@ async function generateChangelog(apiKey, newVersion, diff, stat, changedFiles) {
   const today = new Date().toISOString().split("T")[0];
 
   if (!diff.trim()) {
-    return `## [${newVersion}] - ${today}\n\n- Version bump\n`;
+    throw new Error("No diff available to generate changelog");
   }
 
   const truncatedDiff = diff.length > 8000 ? diff.substring(0, 8000) + "\n... (truncated)" : diff;
@@ -215,22 +215,18 @@ Output format (EXACTLY):
 - Second change
 - (as many as needed for all meaningful changes)`;
 
-  try {
-    const response = await callGrokApi(apiKey, prompt);
-    if (response && response.includes(`## [${newVersion}]`)) {
-      return response.trim() + "\n";
-    }
-    return `## [${newVersion}] - ${today}\n\n- Version bump and improvements\n`;
-  } catch (err) {
-    return `## [${newVersion}] - ${today}\n\n- Version bump\n`;
+  const response = await callGrokApi(apiKey, prompt);
+  if (response && response.includes(`## [${newVersion}]`)) {
+    return response.trim() + "\n";
   }
+  throw new Error("Grok API returned invalid changelog format");
 }
 
 async function generateCommitMessage(apiKey, newVersion, diff, stat, changedFiles) {
   const firstLine = `Release: v${newVersion}`;
 
   if (!diff.trim()) {
-    return `${firstLine}\n\n- Version bump`;
+    throw new Error("No diff available to generate commit message");
   }
 
   const truncatedDiff = diff.length > 8000 ? diff.substring(0, 8000) + "\n... (truncated)" : diff;
@@ -264,18 +260,14 @@ Release: v${newVersion}
 - Second change
 - (as many as needed)`;
 
-  try {
-    const response = await callGrokApi(apiKey, prompt);
-    if (response && response.startsWith(`Release: v${newVersion}`)) {
-      return response.trim();
-    }
-    if (response && response.includes("-")) {
-      return `${firstLine}\n\n${response.trim()}`;
-    }
-    return `${firstLine}\n\n- Version bump and improvements`;
-  } catch (err) {
-    return `${firstLine}\n\n- Version bump`;
+  const response = await callGrokApi(apiKey, prompt);
+  if (response && response.startsWith(`Release: v${newVersion}`)) {
+    return response.trim();
   }
+  if (response && response.includes("-")) {
+    return `${firstLine}\n\n${response.trim()}`;
+  }
+  throw new Error("Grok API returned invalid commit message format");
 }
 
 function updateChangelog(changelogEntry) {
@@ -386,16 +378,16 @@ async function main() {
   const envSource = loadEnv();
   const apiKey = getApiKey();
   if (!apiKey) {
-    process.stdout.write("  Warning: No GROK_API_KEY found\n");
-    process.stdout.write("  Changelog and commit messages will use fallback text\n");
-  } else {
-    const sourceMessages = {
-      local: "from local .env",
-      package: "from turl-release package",
-      project: "from project .env"
-    };
-    process.stdout.write(`  API key loaded successfully (${sourceMessages[envSource] || "unknown source"})\n`);
+    process.stdout.write("  ERROR: No GROK_API_KEY found\n");
+    process.stdout.write("  Please add GROK_API_KEY to the turl-release .env file\n");
+    process.exit(1);
   }
+  const sourceMessages = {
+    local: "from local .env",
+    package: "from turl-release package",
+    project: "from project .env"
+  };
+  process.stdout.write(`  API key loaded successfully (${sourceMessages[envSource] || "unknown source"})\n`);
 
   process.stdout.write("\n[2/12] Reading current version...\n");
   const currentVersion = readVersionJson();
@@ -446,15 +438,8 @@ async function main() {
   process.stdout.write(`  Updated to version ${newVersion}\n`);
 
   process.stdout.write("\n[8/12] Generating changelog...\n");
-  let changelogEntry;
-  if (apiKey) {
-    changelogEntry = await generateChangelog(apiKey, newVersion, diff, stat, changedFiles);
-    process.stdout.write("  Changelog generated with AI\n");
-  } else {
-    const today = new Date().toISOString().split("T")[0];
-    changelogEntry = `## [${newVersion}] - ${today}\n\n- Version bump\n`;
-    process.stdout.write("  Changelog generated with fallback\n");
-  }
+  const changelogEntry = await generateChangelog(apiKey, newVersion, diff, stat, changedFiles);
+  process.stdout.write("  Changelog generated with AI\n");
 
   process.stdout.write("\n[9/12] Updating CHANGELOG.md...\n");
   updateChangelog(changelogEntry);
@@ -483,13 +468,8 @@ async function main() {
   const finalChangedFiles = getChangedFiles();
 
   process.stdout.write("\n[12/12] Committing and pushing...\n");
-  let commitMessage;
-  if (apiKey) {
-    process.stdout.write("  Generating commit message with AI...\n");
-    commitMessage = await generateCommitMessage(apiKey, newVersion, finalDiff, finalStat, finalChangedFiles);
-  } else {
-    commitMessage = `Release: v${newVersion}\n\n- Version bump`;
-  }
+  process.stdout.write("  Generating commit message with AI...\n");
+  const commitMessage = await generateCommitMessage(apiKey, newVersion, finalDiff, finalStat, finalChangedFiles);
 
   try {
     const tempFile = path.join(PROJECT_ROOT, ".commit-msg-temp");
