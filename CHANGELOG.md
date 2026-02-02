@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.1] - 2026-02-02
+
+- Updated environment variable parsing in `loadEnvFromPath` function in `src/index.js` to handle quoted values by removing surrounding quotes.
+- Improved key-value splitting logic in `loadEnvFromPath` by using `indexOf` for finding the equals sign instead of splitting, ensuring more accurate parsing.
+
 ## [2.0] - 2026-02-02
 
 - Removed usage of `fileURLToPath` and related constants (`__filename`, `__dirname`, `PACKAGE_ROOT`) in `src/index.js`.

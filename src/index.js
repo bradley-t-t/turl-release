@@ -18,9 +18,17 @@ function loadEnvFromPath(envPath) {
   for (const line of lines) {
     const trimmed = line.trim();
     if (trimmed && !trimmed.startsWith("#")) {
-      const [key, ...valueParts] = trimmed.split("=");
-      if (key && valueParts.length > 0) {
-        process.env[key.trim()] = valueParts.join("=").trim();
+      const equalsIndex = trimmed.indexOf("=");
+      if (equalsIndex !== -1) {
+        const key = trimmed.substring(0, equalsIndex).trim();
+        let value = trimmed.substring(equalsIndex + 1).trim();
+        if ((value.startsWith('"') && value.endsWith('"')) ||
+            (value.startsWith("'") && value.endsWith("'"))) {
+          value = value.slice(1, -1);
+        }
+        if (key) {
+          process.env[key] = value;
+        }
       }
     }
   }
