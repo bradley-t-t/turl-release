@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0] - 2026-02-02
+
+- Removed usage of `fileURLToPath` and related constants (`__filename`, `__dirname`, `PACKAGE_ROOT`) in `src/index.js`.
+- Simplified environment variable loading logic in `loadEnv()` function by removing package-level `.env` loading and self-project checks in `src/index.js`.
+- Updated API key check in `loadEnv()` to support both `GROK_API_KEY` and `REACT_APP_GROK_API_KEY` in `src/index.js`.
+- Changed `loadEnv()` to no longer return a source value and removed associated source messaging logic in `main()` function in `src/index.js`.
+- Updated API key loading success message to always display "from project .env" in `main()` function in `src/index.js`.
+
 ## [1.9] - 2026-02-02
 
 - Updated API key configuration in README.md to require each project to provide its own API key in a `.env` file

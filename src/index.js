@@ -3,12 +3,8 @@
 import fs from "fs";
 import path from "path";
 import { execSync, spawn } from "child_process";
-import { fileURLToPath } from "url";
 import { run as runCleanup } from "./cleanup.js";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const PACKAGE_ROOT = path.resolve(__dirname, "..");
 const PROJECT_ROOT = process.cwd();
 
 function loadEnvFromPath(envPath) {
@@ -33,22 +29,11 @@ function loadEnvFromPath(envPath) {
 }
 
 function loadEnv() {
-  const isSelfProject = PACKAGE_ROOT === PROJECT_ROOT;
-
   const projectEnvPath = path.join(PROJECT_ROOT, ".env");
   const projectEnvLoaded = loadEnvFromPath(projectEnvPath);
 
-  if (projectEnvLoaded && process.env.GROK_API_KEY) {
-    return isSelfProject ? "local" : "project";
-  }
-
-  if (!isSelfProject) {
-    const packageEnvPath = path.join(PACKAGE_ROOT, ".env");
-    const packageEnvLoaded = loadEnvFromPath(packageEnvPath);
-
-    if (packageEnvLoaded && process.env.GROK_API_KEY) {
-      return "package";
-    }
+  if (projectEnvLoaded && (process.env.GROK_API_KEY || process.env.REACT_APP_GROK_API_KEY)) {
+    return "project";
   }
 
   return null;
@@ -375,7 +360,7 @@ async function main() {
   process.stdout.write("========================================\n\n");
 
   process.stdout.write("[1/12] Loading environment variables...\n");
-  const envSource = loadEnv();
+  loadEnv();
   const apiKey = getApiKey();
   if (!apiKey) {
     process.stdout.write("  ERROR: No GROK_API_KEY found\n");
@@ -383,12 +368,7 @@ async function main() {
     process.stdout.write("  Get your API key from https://console.x.ai\n");
     process.exit(1);
   }
-  const sourceMessages = {
-    local: "from local .env",
-    package: "from turl-release package",
-    project: "from project .env"
-  };
-  process.stdout.write(`  API key loaded successfully (${sourceMessages[envSource] || "unknown source"})\n`);
+  process.stdout.write(`  API key loaded successfully (from project .env)\n`);
 
   process.stdout.write("\n[2/12] Reading current version...\n");
   const currentVersion = readVersionJson();
