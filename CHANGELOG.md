@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.3] - 2026-02-02
+
+- Updated README.md with a new tagline and reorganized content for clarity
+- Simplified installation instructions in README.md to focus on dev dependency installation
+- Added Quick Start section in README.md with streamlined setup steps
+- Refined Configuration section in README.md to separate API key and project config details with improved formatting
+- Updated Usage section in README.md to include basic release commands and branch override examples
+- Reformatted "What It Does" section in README.md into a concise table format
+- Added Project Structure section in README.md to outline required project files
+- Enhanced Error Handling section in README.md with a categorized table of errors
+- Added Supported Projects section in README.md listing compatible project types
+- Updated public/turl.json to change default projectName from "my-project" to "my-app"
+
 ## [2.2] - 2026-02-02
 
 - Updated configuration management by replacing `public/version.json` with `public/turl.json` to store version, project name, and branch information
