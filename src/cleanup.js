@@ -143,14 +143,11 @@ export async function run(projectRoot) {
   };
 
   if (!fs.existsSync(srcDir)) {
-    console.log("  No src/ directory found, skipping cleanup");
     return stats;
   }
 
   const jsFiles = getAllFiles(srcDir, JS_EXTENSIONS);
   const cssFiles = getAllFiles(srcDir, CSS_EXTENSIONS);
-
-  console.log(`  Found ${jsFiles.length} JS/TS files and ${cssFiles.length} CSS files`);
 
   for (const file of jsFiles) {
     try {
@@ -163,11 +160,9 @@ export async function run(projectRoot) {
           (cleaned.match(/console\.log/g) || []).length;
         stats.consoleLogsRemoved += removed;
         stats.filesProcessed++;
-        console.log(`  Cleaned: ${path.relative(projectRoot, file)} (${removed} console.log removed)`);
-      }
+        }
     } catch (err) {
-      console.log(`  Warning: Could not process ${file}: ${err.message}`);
-    }
+      }
   }
 
   for (const file of cssFiles) {
@@ -182,11 +177,9 @@ export async function run(projectRoot) {
         fs.writeFileSync(file, cleaned, "utf-8");
         stats.cssClassesRemoved += removed;
         stats.filesProcessed++;
-        console.log(`  Cleaned: ${path.relative(projectRoot, file)} (${removed} unused CSS classes removed)`);
-      }
+        }
     } catch (err) {
-      console.log(`  Warning: Could not process ${file}: ${err.message}`);
-    }
+      }
   }
 
   return stats;

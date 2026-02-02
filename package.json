@@ -8,7 +8,8 @@
     "turl-release": "./src/index.js"
   },
   "scripts": {
-    "test": "echo 'no tests yet'"
+    "test": "echo 'no tests yet'",
+    "release": "node ./src/index.js"
   },
   "keywords": [
     "release",
@@ -24,6 +25,7 @@
     "node": ">=18.0.0"
   },
   "files": [
-    "src"
+    "src",
+    ".env"
   ]
 }

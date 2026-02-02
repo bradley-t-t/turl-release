@@ -3,15 +3,17 @@
 import fs from "fs";
 import path from "path";
 import { execSync, spawn } from "child_process";
+import { fileURLToPath } from "url";
 import { run as runCleanup } from "./cleanup.js";
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const PACKAGE_ROOT = path.resolve(__dirname, "..");
 const PROJECT_ROOT = process.cwd();
 
-function loadEnv() {
-  const envPath = path.join(PROJECT_ROOT, ".env");
-
+function loadEnvFromPath(envPath) {
   if (!fs.existsSync(envPath)) {
-    return null;
+    return false;
   }
 
   const envContent = fs.readFileSync(envPath, "utf-8");
@@ -28,6 +30,28 @@ function loadEnv() {
   }
 
   return true;
+}
+
+function loadEnv() {
+  const isSelfProject = PACKAGE_ROOT === PROJECT_ROOT;
+
+  const packageEnvPath = path.join(PACKAGE_ROOT, ".env");
+  const packageEnvLoaded = loadEnvFromPath(packageEnvPath);
+
+  if (packageEnvLoaded && process.env.GROK_API_KEY) {
+    return isSelfProject ? "local" : "package";
+  }
+
+  if (!isSelfProject) {
+    const projectEnvPath = path.join(PROJECT_ROOT, ".env");
+    const projectEnvLoaded = loadEnvFromPath(projectEnvPath);
+
+    if (projectEnvLoaded) {
+      return "project";
+    }
+  }
+
+  return null;
 }
 
 function getApiKey() {
@@ -198,7 +222,6 @@ Output format (EXACTLY):
     }
     return `## [${newVersion}] - ${today}\n\n- Version bump and improvements\n`;
   } catch (err) {
-    console.log(`  Warning: Grok API failed for changelog: ${err.message}`);
     return `## [${newVersion}] - ${today}\n\n- Version bump\n`;
   }
 }
@@ -251,7 +274,6 @@ Release: v${newVersion}
     }
     return `${firstLine}\n\n- Version bump and improvements`;
   } catch (err) {
-    console.log(`  Warning: Grok API failed for commit message: ${err.message}`);
     return `${firstLine}\n\n- Version bump`;
   }
 }
@@ -356,65 +378,41 @@ function runBuild(buildCommand) {
 }
 
 async function main() {
-  console.log("\n========================================");
-  console.log("       TURL-RELEASE v1.0.0");
-  console.log("========================================\n");
-
-  console.log("[1/12] Loading environment variables...");
-  loadEnv();
+  const envSource = loadEnv();
   const apiKey = getApiKey();
   if (!apiKey) {
-    console.log("  Warning: No GROK_API_KEY or REACT_APP_GROK_API_KEY found in .env");
-    console.log("  Changelog and commit messages will use fallback text");
-  } else {
-    console.log("  API key loaded successfully");
-  }
+    } else {
+    const sourceMessages = {
+      local: "from local .env",
+      package: "from turl-release package",
+      project: "from project .env"
+    };
+    }
 
-  console.log("\n[2/12] Reading current version...");
   const currentVersion = readVersionJson();
   const newVersion = incrementVersion(currentVersion);
-  console.log(`  Current version: ${currentVersion}`);
-  console.log(`  New version: ${newVersion}`);
-
-  console.log("\n[3/12] Running code cleanup...");
   try {
     const cleanupStats = await runCleanup(PROJECT_ROOT);
-    console.log(`  Cleanup complete: ${cleanupStats.consoleLogsRemoved} console.log removed, ${cleanupStats.cssClassesRemoved} CSS classes removed`);
-  } catch (err) {
-    console.log(`  Warning: Cleanup failed: ${err.message}`);
-  }
+    } catch (err) {
+    }
 
-  console.log("\n[4/12] Running code formatter...");
   const formatCommand = detectFormatCommand();
   if (formatCommand) {
     try {
-      console.log(`  Running: ${formatCommand}`);
       execCommand(formatCommand, { silent: true, ignoreError: true });
-      console.log("  Formatting complete");
-    } catch {
-      console.log("  Warning: Formatting failed, continuing...");
-    }
+      } catch {
+      }
   } else {
-    console.log("  No formatter detected, skipping");
-  }
+    }
 
-  console.log("\n[5/12] Checking for changes...");
   const diff = getGitDiff();
   const stat = getGitDiffStat();
   const changedFiles = getChangedFiles();
 
   if (!hasChanges() && !diff.trim()) {
-    console.log("\n  No changes detected. Nothing to release.");
-    console.log("  Exiting gracefully.\n");
     process.exit(0);
   }
-  console.log(`  Found ${changedFiles.length} changed files`);
-
-  console.log("\n[6/12] Updating version.json...");
   writeVersionJson(newVersion);
-  console.log(`  Updated to version ${newVersion}`);
-
-  console.log("\n[7/12] Generating changelog entry...");
   let changelogEntry;
   if (apiKey) {
     changelogEntry = await generateChangelog(apiKey, newVersion, diff, stat, changedFiles);
@@ -422,32 +420,17 @@ async function main() {
     const today = new Date().toISOString().split("T")[0];
     changelogEntry = `## [${newVersion}] - ${today}\n\n- Version bump\n`;
   }
-  console.log("  Changelog entry generated");
-
-  console.log("\n[8/12] Updating CHANGELOG.md...");
   updateChangelog(changelogEntry);
-  console.log("  CHANGELOG.md updated");
-
-  console.log("\n[9/12] Running production build...");
   const buildCommand = detectBuildCommand();
   if (buildCommand) {
     try {
-      console.log(`  Running: ${buildCommand}`);
       await runBuild(buildCommand);
-      console.log("  Build complete");
-    } catch (err) {
-      console.log(`  Warning: Build failed: ${err.message}`);
-      console.log("  Continuing with release...");
-    }
+      } catch (err) {
+      }
   } else {
-    console.log("  No build command detected, skipping");
-  }
+    }
 
-  console.log("\n[10/12] Staging all changes...");
   execCommand("git add -A", { silent: true });
-  console.log("  All changes staged");
-
-  console.log("\n[11/12] Generating commit message...");
   const finalDiff = getGitDiff();
   const finalStat = getGitDiffStat();
   const finalChangedFiles = getChangedFiles();
@@ -458,27 +441,16 @@ async function main() {
   } else {
     commitMessage = `Release: v${newVersion}\n\n- Version bump`;
   }
-  console.log("  Commit message generated");
-
-  console.log("\n[12/12] Committing and pushing...");
   try {
     const tempFile = path.join(PROJECT_ROOT, ".commit-msg-temp");
     fs.writeFileSync(tempFile, commitMessage, "utf-8");
     execCommand(`git commit -F "${tempFile}"`, { silent: true });
     fs.unlinkSync(tempFile);
-    console.log("  Changes committed");
-
     execCommand("git push origin main", { silent: true });
-    console.log("  Pushed to origin/main");
-  } catch (err) {
-    console.log(`  Warning: Git operations failed: ${err.message}`);
-    console.log("  You may need to commit and push manually");
-  }
+    } catch (err) {
+    }
 
-  console.log("\n========================================");
-  console.log(`  Release v${newVersion} complete!`);
-  console.log("========================================\n");
-}
+  }
 
 main().catch((err) => {
   console.error("\nRelease failed:", err.message);
