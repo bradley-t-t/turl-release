@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.2] - 2026-02-02
+
+- Updated configuration management by replacing `public/version.json` with `public/turl.json` to store version, project name, and branch information
+- Enhanced README.md with detailed sections on API key setup, project configuration via `turl.json`, command line options, error handling, and debug mode
+- Added comprehensive error handling in `src/cleanup.js` with custom `CleanupError` class and detailed error codes for project root validation and file operations
+- Improved release process in `src/index.js` to use configuration from `public/turl.json` and support branch overrides via CLI
+- Updated commit message generation to include project name from `public/turl.json` (e.g., "my-project: Release v1.3")
+- Expanded error handling documentation in README.md to cover pre-flight checks, API errors, file system errors, Git errors, and build/format errors
+
 ## [2.1] - 2026-02-02
 
 - Updated environment variable parsing in `loadEnvFromPath` function in `src/index.js` to handle quoted values by removing surrounding quotes.
@@ -47,4 +56,3 @@ All notable changes to this project will be documented in this file.
 ## [1.1] - 2026-02-02
 
 - Version bump
-
