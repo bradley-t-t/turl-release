@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.5] - 2026-02-02
+
+- Updated README.md with a new structure including a Table of Contents for better navigation.
+- Added detailed sections in README.md for Installation, Setup, Usage, Configuration, What It Does, Error Handling, and Supported Projects.
+- Enhanced documentation in README.md with clearer instructions for setting up `.env` file and `turl.json` configuration.
+- Updated the commit message format example in README.md to include more detailed changelog entries.
+- Added a new "Version Rollback" feature description in README.md for handling failures after version updates.
+- Included a "Debug Mode" section in README.md with instructions for running the tool in debug mode.
+- Revised error handling documentation in README.md to categorize and list specific errors handled by the tool.
+- Updated supported environment variable names in README.md to include `REACT_APP_GROK_API_KEY` as a fallback for API key.
+- Added a pre-flight checks step in the "What It Does" section of README.md to ensure git, remote, and node_modules are ready before release.
+
 ## [2.4] - 2026-02-02
 
 - Added LICENSE.md file with the full MIT License text

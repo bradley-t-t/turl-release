@@ -305,10 +305,11 @@ function getApiKey() {
 function validateApiKey(apiKey) {
   if (!apiKey) {
     throw new TurlError(
-      "No GROK_API_KEY found in project .env file",
+      "GROK_API_KEY not found. Add GROK_API_KEY=your-key to your project's .env file",
       ErrorCodes.API_KEY_MISSING,
       {
-        suggestion: "Add GROK_API_KEY=your-key to your project's .env file",
+        suggestion:
+          "Create a .env file in your project root with: GROK_API_KEY=xai-your-key-here",
         helpUrl: "https://console.x.ai",
       },
     );
@@ -958,6 +959,28 @@ function printError(err) {
   }
 }
 
+let originalTurlConfig = null;
+
+function rollbackVersion() {
+  if (originalTurlConfig) {
+    try {
+      writeTurlConfig(originalTurlConfig);
+      process.stdout.write(
+        "  [ROLLBACK] Restored original version in turl.json\n",
+      );
+    } catch (err) {
+      process.stdout.write(
+        `  [WARN] Failed to rollback version: ${err.message}\n`,
+      );
+    }
+  }
+}
+
+function exitWithRollback(code = 1) {
+  rollbackVersion();
+  process.exit(code);
+}
+
 async function main() {
   const cliOptions = parseArgs();
 
@@ -1014,6 +1037,7 @@ async function main() {
   let turlConfig;
   try {
     turlConfig = readTurlConfig();
+    originalTurlConfig = { ...turlConfig };
     process.stdout.write(`  Project: ${turlConfig.projectName}\n`);
     process.stdout.write(`  Current version: ${turlConfig.version}\n`);
     process.stdout.write(
@@ -1144,7 +1168,7 @@ async function main() {
     process.stdout.write("  [OK] Changelog generated with AI\n");
   } catch (err) {
     printError(err);
-    process.exit(1);
+    exitWithRollback(1);
   }
 
   process.stdout.write("\n[9/12] Updating CHANGELOG.md...\n");
@@ -1153,7 +1177,7 @@ async function main() {
     process.stdout.write("  [OK] CHANGELOG.md updated\n");
   } catch (err) {
     printError(err);
-    process.exit(1);
+    exitWithRollback(1);
   }
 
   process.stdout.write("\n[10/12] Running production build...\n");
@@ -1179,7 +1203,7 @@ async function main() {
     process.stdout.write("  [OK] All changes staged\n");
   } catch (err) {
     process.stdout.write(`  [ERROR] Failed to stage changes: ${err.message}\n`);
-    process.exit(1);
+    exitWithRollback(1);
   }
 
   const finalDiff = getGitDiff();
@@ -1202,7 +1226,7 @@ async function main() {
     process.stdout.write("  [OK] Commit message generated\n");
   } catch (err) {
     printError(err);
-    process.exit(1);
+    exitWithRollback(1);
   }
 
   try {
@@ -1210,7 +1234,7 @@ async function main() {
     process.stdout.write("  [OK] Committed successfully\n");
   } catch (err) {
     printError(err);
-    process.exit(1);
+    exitWithRollback(1);
   }
 
   process.stdout.write(`  Pushing to origin/${branch}...\n`);
@@ -1219,7 +1243,7 @@ async function main() {
     process.stdout.write("  [OK] Pushed successfully\n");
   } catch (err) {
     printError(err);
-    process.exit(1);
+    exitWithRollback(1);
   }
 
   process.stdout.write("\n========================================\n");
@@ -1242,5 +1266,6 @@ main().catch((err) => {
       process.stdout.write(`Stack trace:\n${err.stack}\n`);
     }
   }
+  rollbackVersion();
   process.exit(1);
 });

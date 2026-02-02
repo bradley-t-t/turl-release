@@ -1,18 +1,31 @@
 # turl-release
 
-> Automated semantic versioning, cleanup, changelog generation, and release commits for React projects.
+Automated semantic versioning, cleanup, changelog generation, and release commits for React projects.
 
 by Trent
 
 ---
 
-## Quick Start
+## Table of Contents
+
+- [Installation](#installation)
+- [Setup](#setup)
+- [Usage](#usage)
+- [Configuration](#configuration)
+- [What It Does](#what-it-does)
+- [Error Handling](#error-handling)
+- [Supported Projects](#supported-projects)
+- [License](#license)
+
+---
+
+## Installation
 
 ```bash
 npm install --save-dev turl-release
 ```
 
-Add to your `package.json`:
+Add to your `package.json` scripts:
 
 ```json
 {
@@ -22,39 +35,29 @@ Add to your `package.json`:
 }
 ```
 
-Create `.env` in your project root:
-
-```
-GROK_API_KEY=your-xai-api-key
-```
-
-Run:
-
-```bash
-npm run release
-```
-
 ---
 
-## Configuration
+## Setup
 
-### 1. API Key (Required)
+### Step 1: Create `.env` file
 
-Get your API key from [console.x.ai](https://console.x.ai)
-
-Create a `.env` file in your project root:
+Create a `.env` file in your project root with your Grok API key:
 
 ```env
 GROK_API_KEY=xai-your-api-key-here
 ```
 
-> Add `.env` to your `.gitignore` to keep your key secure.
+Get your API key from [console.x.ai](https://console.x.ai)
 
-### 2. Project Config (turl.json)
+Add `.env` to your `.gitignore`:
 
-A `public/turl.json` file stores your project configuration. It will be **auto-generated** on first run if it doesn't exist.
+```
+.env
+```
 
-**Location:** `public/turl.json`
+### Step 2: Create `turl.json` (Optional)
+
+The tool auto-generates `public/turl.json` on first run, but you can create it manually:
 
 ```json
 {
@@ -64,20 +67,36 @@ A `public/turl.json` file stores your project configuration. It will be **auto-g
 }
 ```
 
-| Field         | Description                        | Default     |
-| ------------- | ---------------------------------- | ----------- |
-| `version`     | Current version (auto-incremented) | `"1.0"`     |
-| `projectName` | Name used in commit messages       | Folder name |
-| `branch`      | Git branch to push to              | `"main"`    |
+---
 
-**Example commit message format:**
+## Configuration
 
+### turl.json
+
+Location: `public/turl.json`
+
+```json
+{
+  "version": "1.0",
+  "projectName": "my-app",
+  "branch": "main"
+}
 ```
-my-app: Release v1.3
 
-- Added new feature X
-- Fixed bug in component Y
-```
+| Field         | Type     | Description                        | Default     |
+| ------------- | -------- | ---------------------------------- | ----------- |
+| `version`     | `string` | Current version (auto-incremented) | `"1.0"`     |
+| `projectName` | `string` | Name used in commit messages       | Folder name |
+| `branch`      | `string` | Git branch to push to              | `"main"`    |
+
+### API Key
+
+The API key must be set in each project that uses turl-release.
+
+Supported environment variable names (checked in order):
+
+1. `GROK_API_KEY`
+2. `REACT_APP_GROK_API_KEY`
 
 ---
 
@@ -86,13 +105,13 @@ my-app: Release v1.3
 ### Basic Release
 
 ```bash
-npx turl-release
+npm run release
 ```
 
 or
 
 ```bash
-npm run release
+npx turl-release
 ```
 
 ### Override Branch
@@ -108,26 +127,45 @@ npx turl-release -b feature/my-branch
 npx turl-release --help
 ```
 
+### Debug Mode
+
+```bash
+DEBUG=1 npx turl-release
+```
+
 ---
 
 ## What It Does
 
-| Step | Action                                     |
-| ---- | ------------------------------------------ |
-| 1    | Load API key from `.env`                   |
-| 2    | Read config from `public/turl.json`        |
-| 3    | Increment version (1.2 -> 1.3, 1.9 -> 2.0) |
-| 4    | Remove `console.log()` calls from `src/`   |
-| 5    | Remove unused CSS classes from `src/`      |
-| 6    | Run code formatter (if available)          |
-| 7    | Check for changes (exit if none)           |
-| 8    | Update `public/turl.json` with new version |
-| 9    | Generate changelog via Grok AI             |
-| 10   | Update `CHANGELOG.md`                      |
-| 11   | Run production build                       |
-| 12   | Stage all changes (`git add -A`)           |
-| 13   | Generate commit message via Grok AI        |
-| 14   | Commit and push to configured branch       |
+| Step | Action                                        |
+| ---- | --------------------------------------------- |
+| 0    | Pre-flight checks (git, remote, node_modules) |
+| 1    | Load API key from project `.env`              |
+| 2    | Read config from `public/turl.json`           |
+| 3    | Increment version (1.2 -> 1.3, 1.9 -> 2.0)    |
+| 4    | Remove `console.log()` calls from `src/`      |
+| 5    | Remove unused CSS classes from `src/`         |
+| 6    | Run code formatter (if available)             |
+| 7    | Check for changes (exit if none)              |
+| 8    | Update `public/turl.json` with new version    |
+| 9    | Generate changelog via Grok AI                |
+| 10   | Update `CHANGELOG.md`                         |
+| 11   | Run production build                          |
+| 12   | Stage, commit, and push                       |
+
+### Version Rollback
+
+If any step fails after the version is updated, the tool automatically rolls back `turl.json` to the original version.
+
+### Commit Message Format
+
+```
+my-app: Release v1.3
+
+- Added new feature X
+- Fixed bug in component Y
+- Updated styling for component Z
+```
 
 ---
 
@@ -137,33 +175,30 @@ Your project needs:
 
 ```
 my-project/
-  ├── .env                 # GROK_API_KEY (required)
-  ├── public/
-  │   └── turl.json        # Auto-generated config
-  ├── src/                 # Source files (cleanup runs here)
-  └── package.json
+  .env                    <- GROK_API_KEY (required)
+  public/
+    turl.json             <- Auto-generated config
+  src/                    <- Source files (cleanup runs here)
+  package.json
 ```
 
 ---
 
 ## Error Handling
 
-The tool includes comprehensive error handling:
+The tool includes comprehensive error handling for common issues:
 
-| Category  | Errors Caught                                                        |
-| --------- | -------------------------------------------------------------------- |
-| **Git**   | Not installed, not a repo, no remote, push rejected, auth failures   |
-| **API**   | Missing key, invalid key, network errors, rate limits, server errors |
-| **Files** | Permission denied, not found, no disk space, invalid JSON            |
-| **Build** | Prettier not installed, build failures                               |
+| Category | Errors Handled                                                     |
+| -------- | ------------------------------------------------------------------ |
+| Git      | Not installed, not a repo, no remote, push rejected, auth failures |
+| API      | Missing key, invalid key, network errors, rate limits              |
+| Files    | Permission denied, not found, no disk space, invalid JSON          |
+| Build    | Prettier not installed, build command failures                     |
+| Cleanup  | Directory access, file read/write errors                           |
 
-**Strict Mode:** If the AI fails, the release stops. No fallback messages.
+### Strict Mode
 
-### Debug Mode
-
-```bash
-DEBUG=1 npx turl-release
-```
+If the AI fails to generate a changelog or commit message, the release stops. No fallback messages are used.
 
 ---
 
@@ -171,7 +206,7 @@ DEBUG=1 npx turl-release
 
 - Create React App
 - Vite + React
-- Any React project with `src/` directory
+- Any React project with a `src/` directory
 
 ---
 
@@ -180,20 +215,14 @@ DEBUG=1 npx turl-release
 ```
 MAJOR.MINOR
 
-1.0 -> 1.1 -> 1.2 -> ... -> 1.9 -> 2.0
+1.0 -> 1.1 -> 1.2 -> ... -> 1.9 -> 2.0 -> 2.1 -> ...
 ```
 
 ---
 
-## Installation Options
+## Development
 
-### As Dev Dependency (Recommended)
-
-```bash
-npm install --save-dev turl-release
-```
-
-### Global Link (Development)
+### Global Link
 
 ```bash
 cd /path/to/turl-release
