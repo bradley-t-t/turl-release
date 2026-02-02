@@ -1,9 +1,18 @@
 import fs from "fs";
 import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const PACKAGE_SRC = __dirname;
 
 const IGNORE_DIRS = ["node_modules", "dist", "build", ".git", "coverage", ".next", ".cache"];
 const JS_EXTENSIONS = [".js", ".jsx", ".ts", ".tsx"];
 const CSS_EXTENSIONS = [".css"];
+
+function isPackageFile(filePath) {
+  return filePath.startsWith(PACKAGE_SRC);
+}
 
 function getAllFiles(dir, extensions, files = []) {
   const entries = fs.readdirSync(dir, { withFileTypes: true });
@@ -17,7 +26,7 @@ function getAllFiles(dir, extensions, files = []) {
       }
     } else if (entry.isFile()) {
       const ext = path.extname(entry.name).toLowerCase();
-      if (extensions.includes(ext)) {
+      if (extensions.includes(ext) && !isPackageFile(fullPath)) {
         files.push(fullPath);
       }
     }

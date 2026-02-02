@@ -2,6 +2,8 @@
 
 A CLI tool for automated semantic versioning, cleanup, changelog generation, and release commits for React and React + Vite projects.
 
+by Trent
+
 ## Installation
 
 Install as a dev dependency in your React project:
