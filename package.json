@@ -1,0 +1,29 @@
+{
+  "name": "turl-release",
+  "version": "1.0.0",
+  "description": "CLI tool for automated semantic versioning, cleanup, changelog generation, and release commits for React projects",
+  "main": "./src/index.js",
+  "type": "module",
+  "bin": {
+    "turl-release": "./src/index.js"
+  },
+  "scripts": {
+    "test": "echo 'no tests yet'"
+  },
+  "keywords": [
+    "release",
+    "versioning",
+    "changelog",
+    "react",
+    "vite",
+    "cli"
+  ],
+  "author": "",
+  "license": "ISC",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "src"
+  ]
+}
