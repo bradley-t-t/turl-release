@@ -378,79 +378,137 @@ function runBuild(buildCommand) {
 }
 
 async function main() {
+  process.stdout.write("\n========================================\n");
+  process.stdout.write("       TURL-RELEASE v1.0.0\n");
+  process.stdout.write("========================================\n\n");
+
+  process.stdout.write("[1/12] Loading environment variables...\n");
   const envSource = loadEnv();
   const apiKey = getApiKey();
   if (!apiKey) {
-    } else {
+    process.stdout.write("  Warning: No GROK_API_KEY found\n");
+    process.stdout.write("  Changelog and commit messages will use fallback text\n");
+  } else {
     const sourceMessages = {
       local: "from local .env",
       package: "from turl-release package",
       project: "from project .env"
     };
-    }
+    process.stdout.write(`  API key loaded successfully (${sourceMessages[envSource] || "unknown source"})\n`);
+  }
 
+  process.stdout.write("\n[2/12] Reading current version...\n");
   const currentVersion = readVersionJson();
+  process.stdout.write(`  Current version: ${currentVersion}\n`);
+
+  process.stdout.write("\n[3/12] Calculating new version...\n");
   const newVersion = incrementVersion(currentVersion);
+  process.stdout.write(`  New version: ${newVersion}\n`);
+
+  process.stdout.write("\n[4/12] Running code cleanup...\n");
   try {
     const cleanupStats = await runCleanup(PROJECT_ROOT);
-    } catch (err) {
-    }
+    process.stdout.write(`  Removed ${cleanupStats.consoleLogsRemoved} console.log calls\n`);
+    process.stdout.write(`  Removed ${cleanupStats.cssClassesRemoved} unused CSS classes\n`);
+  } catch (err) {
+    process.stdout.write(`  Cleanup error: ${err.message}\n`);
+  }
 
+  process.stdout.write("\n[5/12] Running code formatter...\n");
   const formatCommand = detectFormatCommand();
   if (formatCommand) {
     try {
       execCommand(formatCommand, { silent: true, ignoreError: true });
-      } catch {
-      }
-  } else {
+      process.stdout.write(`  Formatted with: ${formatCommand}\n`);
+    } catch {
+      process.stdout.write("  Format command failed, continuing...\n");
     }
+  } else {
+    process.stdout.write("  No formatter detected, skipping...\n");
+  }
 
+  process.stdout.write("\n[6/12] Checking for changes...\n");
   const diff = getGitDiff();
   const stat = getGitDiffStat();
   const changedFiles = getChangedFiles();
 
   if (!hasChanges() && !diff.trim()) {
+    process.stdout.write("  No changes detected. Nothing to release.\n");
+    process.stdout.write("\n========================================\n");
+    process.stdout.write("  Release skipped - no changes\n");
+    process.stdout.write("========================================\n\n");
     process.exit(0);
   }
+  process.stdout.write(`  Found ${changedFiles.length} changed files\n`);
+
+  process.stdout.write("\n[7/12] Updating version.json...\n");
   writeVersionJson(newVersion);
+  process.stdout.write(`  Updated to version ${newVersion}\n`);
+
+  process.stdout.write("\n[8/12] Generating changelog...\n");
   let changelogEntry;
   if (apiKey) {
     changelogEntry = await generateChangelog(apiKey, newVersion, diff, stat, changedFiles);
+    process.stdout.write("  Changelog generated with AI\n");
   } else {
     const today = new Date().toISOString().split("T")[0];
     changelogEntry = `## [${newVersion}] - ${today}\n\n- Version bump\n`;
+    process.stdout.write("  Changelog generated with fallback\n");
   }
+
+  process.stdout.write("\n[9/12] Updating CHANGELOG.md...\n");
   updateChangelog(changelogEntry);
+  process.stdout.write("  CHANGELOG.md updated\n");
+
+  process.stdout.write("\n[10/12] Running production build...\n");
   const buildCommand = detectBuildCommand();
   if (buildCommand) {
     try {
       await runBuild(buildCommand);
-      } catch (err) {
-      }
-  } else {
+      process.stdout.write("  Build completed successfully\n");
+    } catch (err) {
+      process.stdout.write(`  Build failed: ${err.message}\n`);
+      process.stdout.write("  Continuing with release...\n");
     }
+  } else {
+    process.stdout.write("  No build command detected, skipping...\n");
+  }
 
+  process.stdout.write("\n[11/12] Staging all changes...\n");
   execCommand("git add -A", { silent: true });
+  process.stdout.write("  All changes staged\n");
+
   const finalDiff = getGitDiff();
   const finalStat = getGitDiffStat();
   const finalChangedFiles = getChangedFiles();
 
+  process.stdout.write("\n[12/12] Committing and pushing...\n");
   let commitMessage;
   if (apiKey) {
+    process.stdout.write("  Generating commit message with AI...\n");
     commitMessage = await generateCommitMessage(apiKey, newVersion, finalDiff, finalStat, finalChangedFiles);
   } else {
     commitMessage = `Release: v${newVersion}\n\n- Version bump`;
   }
+
   try {
     const tempFile = path.join(PROJECT_ROOT, ".commit-msg-temp");
     fs.writeFileSync(tempFile, commitMessage, "utf-8");
     execCommand(`git commit -F "${tempFile}"`, { silent: true });
     fs.unlinkSync(tempFile);
-    execCommand("git push origin main", { silent: true });
-    } catch (err) {
-    }
+    process.stdout.write("  Committed successfully\n");
 
+    process.stdout.write("  Pushing to origin/main...\n");
+    execCommand("git push origin main", { silent: true });
+    process.stdout.write("  Pushed successfully\n");
+  } catch (err) {
+    process.stdout.write(`  Git error: ${err.message}\n`);
   }
+
+  process.stdout.write("\n========================================\n");
+  process.stdout.write(`  Release v${newVersion} complete!\n`);
+  process.stdout.write("========================================\n\n");
+}
 
 main().catch((err) => {
   console.error("\nRelease failed:", err.message);
