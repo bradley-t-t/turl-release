@@ -207,4 +207,4 @@ npm link turl-release
 
 ## License
 
-ISC
+MIT - Free for everyone to use. See [LICENSE.md](LICENSE.md) for details.

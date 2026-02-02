@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.4] - 2026-02-02
+
+- Added LICENSE.md file with the full MIT License text
+- Updated license information in README.md to reference MIT License and link to LICENSE.md
+- Changed license field in package.json from ISC to MIT
+- Updated author field in package.json to "Trent"
+
 ## [2.3] - 2026-02-02
 
 - Updated README.md with a new tagline and reorganized content for clarity

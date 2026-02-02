@@ -19,8 +19,8 @@
     "vite",
     "cli"
   ],
-  "author": "",
-  "license": "ISC",
+  "author": "Trent",
+  "license": "MIT",
   "engines": {
     "node": ">=18.0.0"
   },
