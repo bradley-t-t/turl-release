@@ -421,23 +421,49 @@ function hasChanges() {
   return status.trim().length > 0;
 }
 
-function getGitDiff() {
+function getGitDiff(excludeTurlJson = false) {
+  if (excludeTurlJson) {
+    const diff = execCommandSilent(
+      "git diff HEAD -- . ':(exclude)public/turl.json'",
+    );
+    const stagedDiff = execCommandSilent(
+      "git diff --cached -- . ':(exclude)public/turl.json'",
+    );
+    return diff + stagedDiff;
+  }
   const diff = execCommandSilent("git diff HEAD");
   const stagedDiff = execCommandSilent("git diff --cached");
   return diff + stagedDiff;
 }
 
-function getGitDiffStat() {
+function getGitDiffStat(excludeTurlJson = false) {
+  if (excludeTurlJson) {
+    const stat = execCommandSilent(
+      "git diff HEAD --stat -- . ':(exclude)public/turl.json'",
+    );
+    const stagedStat = execCommandSilent(
+      "git diff --cached --stat -- . ':(exclude)public/turl.json'",
+    );
+    return stat + stagedStat;
+  }
   const stat = execCommandSilent("git diff HEAD --stat");
   const stagedStat = execCommandSilent("git diff --cached --stat");
   return stat + stagedStat;
 }
 
-function getChangedFiles() {
+function getChangedFiles(excludeTurlJson = false) {
   const files = execCommandSilent("git diff HEAD --name-only");
   const stagedFiles = execCommandSilent("git diff --cached --name-only");
   const combined = files + stagedFiles;
-  return [...new Set(combined.split("\n").filter(Boolean))];
+  let fileList = [...new Set(combined.split("\n").filter(Boolean))];
+
+  if (excludeTurlJson) {
+    fileList = fileList.filter(
+      (f) => f !== "public/turl.json" && f !== "turl.json",
+    );
+  }
+
+  return fileList;
 }
 
 async function callGrokApi(apiKey, prompt) {
@@ -600,15 +626,17 @@ async function generateChangelog(
   const prompt = `Generate a changelog entry for ${projectName} version ${newVersion}.
 
 RULES:
-1. ONLY list changes that are EXPLICITLY visible in the diff below
+1. ONLY describe changes that are EXPLICITLY visible in the diff below
 2. Do NOT invent or assume any changes not shown in the diff
-3. Be specific and accurate - mention actual file names, function names, or features changed
-4. Group related changes together
-5. Use bullet points starting with "-"
-6. Include ALL meaningful changes visible in the diff - there is no strict bullet limit
-7. Aim for brevity while ensuring completeness
-8. Do NOT use any emojis
-9. Do NOT include "Version bump" unless there are no other changes
+3. Write in a natural, human-friendly tone - like a developer explaining what they did
+4. Be specific - mention actual features, fixes, or improvements by name
+5. Group related changes together logically
+6. Use bullet points starting with "-"
+7. Include ALL meaningful changes visible in the diff
+8. Keep it concise but complete
+9. Do NOT use any emojis
+10. Do NOT mention version bumps, version file updates, or turl.json changes
+11. Focus on what actually changed in the code, not metadata
 
 Changed files: ${changedFiles.join(", ")}
 
@@ -621,9 +649,9 @@ ${truncatedDiff}
 Output format (EXACTLY):
 ## [${newVersion}] - ${today}
 
-- First change
+- First change (written naturally)
 - Second change
-- (as many as needed for all meaningful changes)`;
+- (as many as needed)`;
 
   const response = await callGrokApi(apiKey, prompt);
 
@@ -668,13 +696,15 @@ CRITICAL RULES:
 1. The FIRST line MUST be EXACTLY: "${projectName}: Release v${newVersion}"
 2. The SECOND line MUST be blank
 3. Then bullet points of changes starting with "-"
-4. ONLY list changes that are EXPLICITLY visible in the diff below
+4. ONLY describe changes that are EXPLICITLY visible in the diff below
 5. Do NOT invent or assume any changes not shown in the diff
-6. Be specific and accurate
-7. Group related changes together
-8. Include ALL meaningful changes visible in the diff - no strict bullet limit
-9. Aim for brevity while ensuring completeness
+6. Write in a natural, human-friendly tone
+7. Be specific about what actually changed
+8. Group related changes together
+9. Include ALL meaningful changes visible in the diff
 10. Do NOT use any emojis
+11. Do NOT mention version bumps, version file updates, or turl.json changes
+12. Focus on actual code changes, not metadata
 
 Changed files: ${changedFiles.join(", ")}
 
@@ -687,7 +717,7 @@ ${truncatedDiff}
 Output format (EXACTLY):
 ${projectName}: Release v${newVersion}
 
-- First change
+- First change (written naturally)
 - Second change
 - (as many as needed)`;
 
@@ -1128,7 +1158,6 @@ async function main() {
 
   process.stdout.write("\n[6/12] Checking for changes...\n");
   const diff = getGitDiff();
-  const stat = getGitDiffStat();
   const changedFiles = getChangedFiles();
 
   if (!hasChanges() && !diff.trim()) {
@@ -1156,14 +1185,17 @@ async function main() {
 
   process.stdout.write("\n[8/12] Generating changelog...\n");
   let changelogEntry;
+  const changelogDiff = getGitDiff(true);
+  const changelogStat = getGitDiffStat(true);
+  const changelogFiles = getChangedFiles(true);
   try {
     changelogEntry = await generateChangelog(
       apiKey,
       newVersion,
       projectName,
-      diff,
-      stat,
-      changedFiles,
+      changelogDiff,
+      changelogStat,
+      changelogFiles,
     );
     process.stdout.write("  [OK] Changelog generated with AI\n");
   } catch (err) {
@@ -1206,9 +1238,9 @@ async function main() {
     exitWithRollback(1);
   }
 
-  const finalDiff = getGitDiff();
-  const finalStat = getGitDiffStat();
-  const finalChangedFiles = getChangedFiles();
+  const finalDiff = getGitDiff(true);
+  const finalStat = getGitDiffStat(true);
+  const finalChangedFiles = getChangedFiles(true);
 
   process.stdout.write("\n[12/12] Committing and pushing...\n");
   process.stdout.write("  Generating commit message with AI...\n");

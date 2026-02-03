@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.6] - 2026-02-03
+
+- Updated README.md with a restructured layout, renaming "Setup" to "Quick Start" for clearer onboarding.
+- Enhanced documentation in README.md with more detailed tables for configuration fields and workflow steps.
+- Added explicit instructions in README.md for overriding the branch with command-line options.
+- Improved error handling descriptions in README.md, including additional error categories like server errors for API issues.
+- Clarified project structure requirements in README.md, specifying the minimum needed files and their purpose.
+- Updated commit message and changelog format examples in README.md to reflect AI-generated content based on actual code changes.
+- Added emphasis in README.md on strict mode behavior, ensuring releases fail if API key issues or changelog generation fails, preventing generic commits.
+
 ## [2.5] - 2026-02-02
 
 - Updated README.md with a new structure including a Table of Contents for better navigation.

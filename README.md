@@ -9,9 +9,9 @@ by Trent
 ## Table of Contents
 
 - [Installation](#installation)
-- [Setup](#setup)
-- [Usage](#usage)
+- [Quick Start](#quick-start)
 - [Configuration](#configuration)
+- [Usage](#usage)
 - [What It Does](#what-it-does)
 - [Error Handling](#error-handling)
 - [Supported Projects](#supported-projects)
@@ -37,9 +37,9 @@ Add to your `package.json` scripts:
 
 ---
 
-## Setup
+## Quick Start
 
-### Step 1: Create `.env` file
+### 1. Create `.env` file
 
 Create a `.env` file in your project root with your Grok API key:
 
@@ -55,17 +55,13 @@ Add `.env` to your `.gitignore`:
 .env
 ```
 
-### Step 2: Create `turl.json` (Optional)
+### 2. Run your first release
 
-The tool auto-generates `public/turl.json` on first run, but you can create it manually:
-
-```json
-{
-  "version": "1.0",
-  "projectName": "my-app",
-  "branch": "main"
-}
+```bash
+npm run release
 ```
+
+That's it! The tool will auto-generate a `public/turl.json` config file on first run.
 
 ---
 
@@ -75,6 +71,8 @@ The tool auto-generates `public/turl.json` on first run, but you can create it m
 
 Location: `public/turl.json`
 
+This file is auto-generated on first run, but you can create or edit it manually:
+
 ```json
 {
   "version": "1.0",
@@ -83,17 +81,17 @@ Location: `public/turl.json`
 }
 ```
 
-| Field         | Type     | Description                        | Default     |
-| ------------- | -------- | ---------------------------------- | ----------- |
-| `version`     | `string` | Current version (auto-incremented) | `"1.0"`     |
-| `projectName` | `string` | Name used in commit messages       | Folder name |
-| `branch`      | `string` | Git branch to push to              | `"main"`    |
+| Field         | Type     | Description                               | Default          |
+| ------------- | -------- | ----------------------------------------- | ---------------- |
+| `version`     | `string` | Current version number (auto-incremented) | `"1.0"`          |
+| `projectName` | `string` | Project name used in commit messages      | Your folder name |
+| `branch`      | `string` | Default git branch to push to             | `"main"`         |
 
 ### API Key
 
-The API key must be set in each project that uses turl-release.
+Each project using turl-release needs its own `.env` file with the API key.
 
-Supported environment variable names (checked in order):
+Supported environment variable names (checked in this order):
 
 1. `GROK_API_KEY`
 2. `REACT_APP_GROK_API_KEY`
@@ -116,6 +114,8 @@ npx turl-release
 
 ### Override Branch
 
+Push to a different branch than what's configured in `turl.json`:
+
 ```bash
 npx turl-release --branch develop
 npx turl-release -b feature/my-branch
@@ -129,6 +129,8 @@ npx turl-release --help
 
 ### Debug Mode
 
+Enable debug output for troubleshooting:
+
 ```bash
 DEBUG=1 npx turl-release
 ```
@@ -137,45 +139,59 @@ DEBUG=1 npx turl-release
 
 ## What It Does
 
-| Step | Action                                        |
-| ---- | --------------------------------------------- |
-| 0    | Pre-flight checks (git, remote, node_modules) |
-| 1    | Load API key from project `.env`              |
-| 2    | Read config from `public/turl.json`           |
-| 3    | Increment version (1.2 -> 1.3, 1.9 -> 2.0)    |
-| 4    | Remove `console.log()` calls from `src/`      |
-| 5    | Remove unused CSS classes from `src/`         |
-| 6    | Run code formatter (if available)             |
-| 7    | Check for changes (exit if none)              |
-| 8    | Update `public/turl.json` with new version    |
-| 9    | Generate changelog via Grok AI                |
-| 10   | Update `CHANGELOG.md`                         |
-| 11   | Run production build                          |
-| 12   | Stage, commit, and push                       |
+| Step | Action                                             |
+| ---- | -------------------------------------------------- |
+| 0    | Pre-flight checks (git, remote, dependencies)      |
+| 1    | Load API key from project `.env`                   |
+| 2    | Read config from `public/turl.json` (or create it) |
+| 3    | Increment version (1.2 -> 1.3, 1.9 -> 2.0)         |
+| 4    | Remove `console.log()` calls from `src/`           |
+| 5    | Remove unused CSS classes from `src/`              |
+| 6    | Run code formatter (if available)                  |
+| 7    | Check for changes (exit gracefully if none)        |
+| 8    | Update `public/turl.json` with new version         |
+| 9    | Generate changelog via Grok AI                     |
+| 10   | Update `CHANGELOG.md`                              |
+| 11   | Run production build                               |
+| 12   | Stage, commit, and push                            |
 
 ### Version Rollback
 
-If any step fails after the version is updated, the tool automatically rolls back `turl.json` to the original version.
+If any step fails after the version is updated, the tool automatically rolls back `turl.json` to the original version. Your project won't be left in a broken state.
 
 ### Commit Message Format
+
+Commit messages are generated by AI based on actual code changes:
 
 ```
 my-app: Release v1.3
 
-- Added new feature X
-- Fixed bug in component Y
-- Updated styling for component Z
+- Added user authentication flow
+- Fixed navigation bug on mobile
+- Updated button styling in header
+```
+
+### Changelog Format
+
+Changelog entries follow a standard format and only include actual code changes (not version bumps):
+
+```markdown
+## [1.3] - 2026-02-02
+
+- Added user authentication flow
+- Fixed navigation bug on mobile
+- Updated button styling in header
 ```
 
 ---
 
 ## Project Structure
 
-Your project needs:
+Minimum required structure:
 
 ```
 my-project/
-  .env                    <- GROK_API_KEY (required)
+  .env                    <- Your GROK_API_KEY (required)
   public/
     turl.json             <- Auto-generated config
   src/                    <- Source files (cleanup runs here)
@@ -188,17 +204,23 @@ my-project/
 
 The tool includes comprehensive error handling for common issues:
 
-| Category | Errors Handled                                                     |
-| -------- | ------------------------------------------------------------------ |
-| Git      | Not installed, not a repo, no remote, push rejected, auth failures |
-| API      | Missing key, invalid key, network errors, rate limits              |
-| Files    | Permission denied, not found, no disk space, invalid JSON          |
-| Build    | Prettier not installed, build command failures                     |
-| Cleanup  | Directory access, file read/write errors                           |
+| Category | Errors Handled                                                       |
+| -------- | -------------------------------------------------------------------- |
+| Git      | Not installed, not a repo, no remote, push rejected, auth failures   |
+| API      | Missing key, invalid key, network errors, rate limits, server errors |
+| Files    | Permission denied, not found, no disk space, invalid JSON            |
+| Build    | Prettier not installed, build command failures                       |
+| Cleanup  | Directory access errors, file read/write errors                      |
 
 ### Strict Mode
 
-If the AI fails to generate a changelog or commit message, the release stops. No fallback messages are used.
+The release will fail (not proceed with fallback messages) if:
+
+- API key is missing or invalid
+- Changelog generation fails
+- Commit message generation fails
+
+This ensures you never have generic "Version bump" commits.
 
 ---
 
@@ -212,9 +234,9 @@ If the AI fails to generate a changelog or commit message, the release stops. No
 
 ## Version Format
 
-```
-MAJOR.MINOR
+Versions follow a simple MAJOR.MINOR pattern:
 
+```
 1.0 -> 1.1 -> 1.2 -> ... -> 1.9 -> 2.0 -> 2.1 -> ...
 ```
 
@@ -222,7 +244,16 @@ MAJOR.MINOR
 
 ## Development
 
-### Global Link
+### Using turl-release on itself
+
+This tool can release itself:
+
+```bash
+cd /path/to/turl-release
+npm run release
+```
+
+### Global Link (for development)
 
 ```bash
 cd /path/to/turl-release
@@ -236,4 +267,6 @@ npm link turl-release
 
 ## License
 
-MIT - Free for everyone to use. See [LICENSE.md](LICENSE.md) for details.
+MIT - Free for everyone to use, modify, and distribute.
+
+See [LICENSE.md](LICENSE.md) for full details.
